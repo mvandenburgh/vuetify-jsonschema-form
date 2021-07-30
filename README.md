@@ -1,5 +1,7 @@
 # vjsf
 
+This is a fork of https://github.com/koumoul-dev/vuetify-jsonschema-form.
+
 *vuetify-jsonschema-form*
 
 Create beautiful and low-effort forms that output valid data.
