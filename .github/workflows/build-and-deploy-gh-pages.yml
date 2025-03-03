@@ -1,0 +1,63 @@
+name: Rebase, Build, and Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master  # Trigger on push to `master` branch
+  release:
+    types: [published]  # Trigger on new release in your repo
+  schedule:
+    - cron: '0 0 * * *'  # Trigger daily at midnight UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  rebase-build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Allows pushing to `gh-pages`
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensures the full history is fetched for rebase
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/koumoul-dev/vuetify-jsonschema-form
+          git fetch upstream
+
+      - name: Rebase on upstream/master
+        run: |
+          git checkout master
+          git rebase upstream/master  # Rebase your `master` onto the upstream `master`
+          git push origin master --force-with-lease  # Push changes (force with lease to ensure safety)
+
+      - name: Build VJSF
+        run: |
+          jq '.scripts.build = "vite build"' package.json > temp.json && mv temp.json package.json
+          npm install
+          npm install --dev @vitejs/plugin-vue vite-plugin-vuetify unplugin-fonts
+          npm run build
+
+      - run: ls .
+
+      - name: Deploy to GitHub Pages
+        run: |
+          # Switch to gh-pages branch, creating it if it doesn't exist
+          git checkout --orphan gh-pages || git checkout gh-pages
+          git rm -rf . 2>/dev/null || true
+
+          # Commit and push changes to gh-pages branch
+          git add dist/*
+          git commit -m "Deploy latest vjsf build from release ${{ github.event.release.tag_name }}" || echo "No changes to commit"
+          git push --force origin gh-pages  # Force push to update the gh-pages branch
