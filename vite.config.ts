@@ -56,11 +56,16 @@ export default defineConfig({
     ],
   },
   build: {
+    commonjsOptions: {
+      // include: commonjsDeps,
+      transformMixedEsModules: true
+    },
     lib: {
       entry: path.resolve(__dirname, 'lib/src/index.js'),
       name: 'vjsf',
       cssFileName: 'vjsf',
       fileName: 'vjsf',
+      formats: ['es', 'umd'],
     },
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
